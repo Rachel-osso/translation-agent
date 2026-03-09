@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
 export async function POST(request) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const { question, segments, segmentId } = await request.json();
 
   const seg = segmentId ? segments.find((s) => s.id === segmentId) : null;
@@ -10,18 +8,42 @@ export async function POST(request) {
     ? `Segment:\nChinese: ${seg.source}\nEnglish: ${seg.target}`
     : `Translation:\n${segments.slice(0, 20).map((s) => `ZH: ${s.source}\nEN: ${s.target}`).join('\n\n')}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a translation review assistant for API docs. Help modify translations. Respond in the user's language. When suggesting a revision, clearly mark it with "Revised: ..."`,
-      },
-      { role: 'user', content: `${context}\n\nQuestion: ${question}` },
-    ],
-  });
+  const systemPrompt = `You are a translation review assistant for API docs. Help modify translations. Respond in the user's language. When suggesting a revision, clearly mark it with "Revised: ..."`;
+  const userMessage = `${context}\n\nQuestion: ${question}`;
 
-  const answer = response.choices[0].message.content;
+  let answer;
+
+  // 优先用 Gemini（免费）
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userMessage }] }],
+          generationConfig: { temperature: 0.3 },
+        }),
+      }
+    );
+    const data = await res.json();
+    answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+  } else {
+    // 回退到 OpenAI
+    const OpenAI = (await import('openai')).default;
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+    });
+    answer = response.choices[0].message.content;
+  }
+
   const revisedMatch = answer.match(/(?:Revised|修改后|建议译文)[^:：]*[：:]\s*(.+)/i);
 
   return NextResponse.json({
