@@ -7,7 +7,7 @@ export default function TranslationAgent() {
   const [rawText, setRawText] = useState('');
   const [segments, setSegments] = useState([]);
   const [stats, setStats] = useState(null);
-  const [engine, setEngine] = useState('deepseek');
+  const [engine, setEngine] = useState('siliconflow');
   const [enUrl, setEnUrl] = useState('');
   const [alignResult, setAlignResult] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -109,10 +109,11 @@ export default function TranslationAgent() {
         <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           <input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="Chinese doc URL (e.g. https://open.dingtalk.com/...)" style={{ flex: 1, padding: '10px 14px', borderRadius: 6, border: '1px solid #ddd', fontSize: 14 }} />
           <select value={engine} onChange={(e) => setEngine(e.target.value)} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #ddd' }}>
-            <option value="deepseek">🆓 DeepSeek V3 (Free)</option>
-            <option value="gemini">🌏 Gemini Flash (Overseas)</option>
-            <option value="openai">💰 OpenAI GPT-4o (Paid)</option>
-            <option value="custom">🔧 Custom Engine</option>
+            <option value="siliconflow">🆓 SiliconFlow Qwen-72B (Free)</option>
+            <option value="deepseek">DeepSeek V3</option>
+            <option value="gemini">Gemini Flash</option>
+            <option value="openai">OpenAI GPT-4o</option>
+            <option value="custom">Custom Engine</option>
           </select>
         </div>
         <textarea value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="Or paste Chinese text here..." rows={4} style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1px solid #ddd', fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }} />
