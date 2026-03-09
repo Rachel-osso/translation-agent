@@ -8,40 +8,48 @@ export async function POST(request) {
     ? `Segment:\nChinese: ${seg.source}\nEnglish: ${seg.target}`
     : `Translation:\n${segments.slice(0, 20).map((s) => `ZH: ${s.source}\nEN: ${s.target}`).join('\n\n')}`;
 
-  const systemPrompt = `You are a translation review assistant for API docs. Help modify translations. Respond in the user's language. When suggesting a revision, clearly mark it with "Revised: ..."`;
-  const userMessage = `${context}\n\nQuestion: ${question}`;
+  const prompt = `You are a translation review assistant for API docs. Help modify translations. Respond in the user's language. When suggesting a revision, clearly mark it with "Revised: ..."\n\n${context}\n\nQuestion: ${question}`;
 
   let answer;
 
-  // 优先用 Gemini（免费）
+  // 优先 Gemini（免费）
   const geminiKey = process.env.GEMINI_API_KEY;
   if (geminiKey) {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ parts: [{ text: userMessage }] }],
-          generationConfig: { temperature: 0.3 },
-        }),
-      }
-    );
-    const data = await res.json();
-    answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
-  } else {
-    // 回退到 OpenAI
-    const OpenAI = (await import('openai')).default;
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3 },
+          }),
+        }
+      );
+      const text = await res.text();
+      const data = JSON.parse(text);
+      answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    } catch (e) {
+      answer = `Gemini error: ${e.message}`;
+    }
+  } else if (process.env.OPENAI_API_KEY) {
+    // 回退 OpenAI
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
-    answer = response.choices[0].message.content;
+    const data = await res.json();
+    answer = data.choices?.[0]?.message?.content || 'No response';
+  } else {
+    answer = 'No API key configured. Please set GEMINI_API_KEY or OPENAI_API_KEY.';
   }
 
   const revisedMatch = answer.match(/(?:Revised|修改后|建议译文)[^:：]*[：:]\s*(.+)/i);
