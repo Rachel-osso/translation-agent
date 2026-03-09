@@ -21,11 +21,20 @@ export default function TranslationAgent() {
     setStep('translating');
     try {
       const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: sourceUrl || undefined, rawText: rawText || undefined, engine }),
-      });
-      const data = await res.json();
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ url: sourceUrl || undefined, rawText: rawText || undefined, engine }),
+});
+const text = await res.text();
+let data;
+try {
+  data = JSON.parse(text);
+} catch (e) {
+  alert('Error: Server returned invalid response: ' + text.substring(0, 200));
+  setStep('input');
+  setLoading(false);
+  return;
+}
       if (data.success) {
         setSegments(data.segments);
         setStats(data.stats);
