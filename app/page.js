@@ -129,6 +129,7 @@ export default function TranslationAgent() {
                 { label: 'TM 100%', value: stats.tmExactMatches, color: '#10b981' },
                 { label: 'TM Fuzzy', value: stats.tmFuzzyMatches, color: '#f59e0b' },
                 { label: 'AI', value: stats.aiTranslated, color: '#8b5cf6' },
+                { label: 'Code (skip)', value: stats.codeBlocks || 0, color: '#6b7280' },
               ].map((s) => (
                 <div key={s.label} style={{ flex: 1, padding: 14, borderRadius: 8, background: 'white', border: `2px solid ${s.color}`, textAlign: 'center' }}>
                   <div style={{ fontSize: 26, fontWeight: 'bold', color: s.color }}>{s.value}</div>
@@ -138,7 +139,10 @@ export default function TranslationAgent() {
             </div>
           )}
 
-          <button onClick={copyHtml} style={{ padding: '10px 20px', borderRadius: 6, border: '2px solid #10b981', background: '#ecfdf5', color: '#065f46', fontWeight: 'bold', cursor: 'pointer', marginBottom: 16 }}>📋 Copy English HTML</button>
+  <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+    <button onClick={copyHtml} style={{ padding: '10px 20px', borderRadius: 6, border: '2px solid #10b981', background: '#ecfdf5', color: '#065f46', fontWeight: 'bold', cursor: 'pointer' }}>📋 Copy English HTML</button>
+    <button onClick={() => { const w = window.open('', '_blank'); w.document.write(segments.map((s) => `<${s.tag}>${s.target}</${s.tag}>`).join('\n')); w.document.close(); }} style={{ padding: '10px 20px', borderRadius: 6, border: '2px solid #3b82f6', background: '#eff6ff', color: '#1e40af', fontWeight: 'bold', cursor: 'pointer' }}>👁️ Preview HTML</button>
+  </div>
 
           <h3>② Review & Edit</h3>
           <div style={{ overflowX: 'auto' }}>
