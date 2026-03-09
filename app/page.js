@@ -131,6 +131,7 @@ export default function TranslationAgent() {
                 { label: 'TM Fuzzy', value: stats.tmFuzzyMatches, color: '#f59e0b' },
                 { label: 'AI', value: stats.aiTranslated, color: '#8b5cf6' },
                 { label: 'Code (skip)', value: stats.codeBlocks || 0, color: '#6b7280' },
+                { label: 'Time', value: `${stats.timeSeconds || '?'}s`, color: '#06b6d4' },
               ].map((s) => (
                 <div key={s.label} style={{ flex: 1, padding: 14, borderRadius: 8, background: 'white', border: `2px solid ${s.color}`, textAlign: 'center' }}>
                   <div style={{ fontSize: 26, fontWeight: 'bold', color: s.color }}>{s.value}</div>
